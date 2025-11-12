@@ -12,7 +12,7 @@
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
             <div>
               <h3 class="mb-4 text-lg font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                Impor Data Karyawan
+                Impor Data Siswa
               </h3>
               <form x-data="{ file: null }" action="{{ route('admin.users.import') }}" method="post" enctype="multipart/form-data">
                 @csrf
@@ -30,7 +30,7 @@
               </form>
               <hr class="my-4">
               <h3 class="mb-4 text-lg font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                Ekspor Data Karyawan
+                Ekspor Data Siswa
               </h3>
               <div class="flex items-center justify-stretch">
                 <x-button href="{{ route('admin.users.export') }}" class="w-full justify-center">{{__('Export')}}</x-button>

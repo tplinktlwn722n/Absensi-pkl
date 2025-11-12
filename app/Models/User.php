@@ -27,8 +27,8 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'nip',
         'name',
+        'nip',
         'email',
         'password',
         'raw_password',
@@ -39,8 +39,10 @@ class User extends Authenticatable
         'birth_place',
         'address',
         'city',
-        'education_id',
+        'school_id',
+        'major_id',
         'division_id',
+        'education_id',
         'job_title_id',
         'profile_photo_path',
     ];
@@ -117,23 +119,47 @@ class User extends Authenticatable
         return 'https://ui-avatars.com/api/?name='.urlencode($name).'&color=FFFFFF&background=D97706';
     }
 
-    public function education()
+    public function school()
     {
-        return $this->belongsTo(Education::class);
+        return $this->belongsTo(Education::class, 'school_id');
+    }
+
+    public function major()
+    {
+        return $this->belongsTo(Division::class, 'major_id');
     }
 
     public function division()
     {
-        return $this->belongsTo(Division::class);
+        return $this->belongsTo(Division::class, 'division_id');
+    }
+
+    public function education()
+    {
+        return $this->belongsTo(Education::class, 'education_id');
     }
 
     public function jobTitle()
     {
-        return $this->belongsTo(JobTitle::class);
+        return $this->belongsTo(JobTitle::class, 'job_title_id');
     }
 
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    /**
+     * Check if user is currently online/active
+     * User is considered online if they are currently logged in
+     * You can implement more sophisticated logic here based on your needs
+     *
+     * @return bool
+     */
+    public function isOnline()
+    {
+        // Simple implementation: check if user has recent activity
+        // You can extend this with Redis, sessions, or other mechanisms
+        return false; // Default to false, will be updated via JavaScript tracking
     }
 }

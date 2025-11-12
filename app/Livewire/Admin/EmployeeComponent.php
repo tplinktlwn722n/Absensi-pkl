@@ -23,9 +23,8 @@ class EmployeeComponent extends Component
     public $showDetail = null;
 
     # filter
-    public ?string $division = null;
-    public ?string $jobTitle = null;
-    public ?string $education = null;
+    public ?string $major = null;
+    public ?string $school = null;
     public ?string $search = null;
 
     public function show($id)
@@ -91,13 +90,11 @@ class EmployeeComponent extends Component
         $users = User::where('group', 'user')
             ->when($this->search, function (Builder $q) {
                 return $q->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('nip', 'like', '%' . $this->search . '%')
                     ->orWhere('email', 'like', '%' . $this->search . '%')
                     ->orWhere('phone', 'like', '%' . $this->search . '%');
             })
-            ->when($this->division, fn (Builder $q) => $q->where('division_id', $this->division))
-            ->when($this->jobTitle, fn (Builder $q) => $q->where('job_title_id', $this->jobTitle))
-            ->when($this->education, fn (Builder $q) => $q->where('education_id', $this->education))
+            ->when($this->major, fn (Builder $q) => $q->where('major_id', $this->major))
+            ->when($this->school, fn (Builder $q) => $q->where('school_id', $this->school))
             ->orderBy('name')
             ->paginate(20);
         return view('livewire.admin.employees', ['users' => $users]);

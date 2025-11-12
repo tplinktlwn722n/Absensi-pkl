@@ -22,7 +22,7 @@
                                     reader.readAsDataURL($refs.photo.files[0]);
                             " />
 
-        <x-label for="photo" value="{{ __('Photo') }}" />
+        <x-label sfor="photo" value="{{ __('Photo') }}" />
 
         <!-- Current Profile Photo -->
         <div class="mt-2" x-show="! photoPreview">
@@ -111,10 +111,10 @@
       <div class="w-full">
         <x-label for="gender" value="{{ __('Gender') }}" />
         <x-select id="gender" class="mt-1 block w-full" wire:model="state.gender" required>
-          <option value="male" {{ $state['gender'] == 'male' ? 'selected' : '' }}>
+          <option value="male" {{ ($state['gender'] ?? '') == 'male' ? 'selected' : '' }}>
             {{ __('Male') }}
           </option>
-          <option value="female" {{ $state['gender'] == 'female' ? 'selected' : '' }}>
+          <option value="female" {{ ($state['gender'] ?? '') == 'female' ? 'selected' : '' }}>
             {{ __('Female') }}
           </option>
         </x-select>
@@ -140,7 +140,7 @@
       <!-- Birth Date -->
       <div class="w-full">
         <x-label for="birth_date" value="{{ __('Birth Date') }}" />
-        <x-input id="birth_date" type="date" class="mt-1 block w-full" value="{{ $state['birth_date'] }}"
+        <x-input id="birth_date" type="date" class="mt-1 block w-full" value="{{ $state['birth_date'] ?? '' }}"
           wire:model="state.birth_date" />
         <x-input-error for="birth_date" class="mt-2" />
       </div>
@@ -159,7 +159,7 @@
       <x-select id="division" class="mt-1 block w-full" wire:model="state.division_id">
         <option value="">{{ __('Select Division') }}</option>
         @foreach (App\Models\Division::all() as $division)
-          <option value="{{ $division->id }}" {{ $division->id == $state['division_id'] ? 'selected' : '' }}>
+          <option value="{{ $division->id }}" {{ $division->id == ($state['division_id'] ?? null) ? 'selected' : '' }}>
             {{ $division->name }}
           </option>
         @endforeach
@@ -173,7 +173,7 @@
       <x-select id="education" class="mt-1 block w-full" wire:model="state.education_id">
         <option value="">{{ __('Select Education') }}</option>
         @foreach (App\Models\Education::all() as $education)
-          <option value="{{ $education->id }}" {{ $education->id == $state['education_id'] ? 'selected' : '' }}>
+          <option value="{{ $education->id }}" {{ $education->id == ($state['education_id'] ?? null) ? 'selected' : '' }}>
             {{ $education->name }}
           </option>
         @endforeach
@@ -187,7 +187,7 @@
       <x-select id="job_title" class="mt-1 block w-full" wire:model="state.job_title_id">
         <option value="">{{ __('Select Job Title') }}</option>
         @foreach (App\Models\JobTitle::all() as $job_title)
-          <option value="{{ $job_title->id }}" {{ $job_title->id == $state['job_title_id'] ? 'selected' : '' }}>
+          <option value="{{ $job_title->id }}" {{ $job_title->id == ($state['job_title_id'] ?? null) ? 'selected' : '' }}>
             {{ $job_title->name }}
           </option>
         @endforeach

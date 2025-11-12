@@ -16,9 +16,6 @@
             <x-nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')">
               {{ __('Dashboard') }}
             </x-nav-link>
-            <x-nav-link href="{{ route('admin.barcodes') }}" :active="request()->routeIs('admin.barcodes')">
-              {{ __('Barcode') }}
-            </x-nav-link>
             <x-nav-link class="hidden md:inline-flex" href="{{ route('admin.attendances') }}" :active="request()->routeIs('admin.attendances')">
               {{ __('Attendance') }}
             </x-nav-link>
@@ -27,7 +24,7 @@
             </x-nav-link>
             <x-nav-dropdown :active="request()->routeIs('admin.masters.*')" triggerClasses="text-nowrap">
               <x-slot name="trigger">
-                {{ __('Master Data') }}
+                {{ __('Data') }}
                 <x-heroicon-o-chevron-down class="ms-2 h-5 w-5 text-gray-400" />
               </x-slot>
               <x-slot name="content">
@@ -40,14 +37,8 @@
                 <x-dropdown-link href="{{ route('admin.masters.division') }}" :active="request()->routeIs('admin.masters.division')">
                   {{ __('Division') }}
                 </x-dropdown-link>
-                <x-dropdown-link href="{{ route('admin.masters.job-title') }}" :active="request()->routeIs('admin.masters.job-title')">
-                  {{ __('Job Title') }}
-                </x-dropdown-link>
                 <x-dropdown-link href="{{ route('admin.masters.education') }}" :active="request()->routeIs('admin.masters.education')">
                   {{ __('Education') }}
-                </x-dropdown-link>
-                <x-dropdown-link href="{{ route('admin.masters.shift') }}" :active="request()->routeIs('admin.masters.shift')">
-                  {{ __('Shift') }}
                 </x-dropdown-link>
                 <hr>
                 <x-dropdown-link href="{{ route('admin.masters.admin') }}" :active="request()->routeIs('admin.masters.admin')">
@@ -162,9 +153,6 @@
         <x-responsive-nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')">
           {{ __('Dashboard') }}
         </x-responsive-nav-link>
-        <x-responsive-nav-link href="{{ route('admin.barcodes') }}" :active="request()->routeIs('admin.barcodes')">
-          {{ __('Barcode') }}
-        </x-responsive-nav-link>
         <x-responsive-nav-link href="{{ route('admin.attendances') }}" :active="request()->routeIs('admin.attendances')">
           {{ __('Attendance') }}
         </x-responsive-nav-link>
@@ -174,20 +162,14 @@
         <x-responsive-nav-link href="{{ route('admin.masters.division') }}" :active="request()->routeIs('admin.masters.division')">
           {{ __('Division') }}
         </x-responsive-nav-link>
-        <x-responsive-nav-link href="{{ route('admin.masters.job-title') }}" :active="request()->routeIs('admin.masters.job-title')">
-          {{ __('Job Title') }}
-        </x-responsive-nav-link>
         <x-responsive-nav-link href="{{ route('admin.masters.education') }}" :active="request()->routeIs('admin.masters.education')">
           {{ __('Education') }}
-        </x-responsive-nav-link>
-        <x-responsive-nav-link href="{{ route('admin.masters.shift') }}" :active="request()->routeIs('admin.masters.shift')">
-          {{ __('Shift') }}
         </x-responsive-nav-link>
         <x-responsive-nav-link href="{{ route('admin.masters.admin') }}" :active="request()->routeIs('admin.masters.admin')">
           {{ __('Admin Management') }}
         </x-responsive-nav-link>
         <x-responsive-nav-link href="{{ route('admin.import-export.users') }}" :active="request()->routeIs('admin.import-export')">
-          Import & Export Karyawan/Admin
+          Import & Export Siswa/Admin
         </x-responsive-nav-link>
         <x-responsive-nav-link href="{{ route('admin.import-export.attendances') }}" :active="request()->routeIs('admin.import-export')">
           Import & Export Absensi

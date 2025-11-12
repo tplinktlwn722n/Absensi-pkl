@@ -30,6 +30,7 @@ class Attendance extends Model
         'status',
         'note',
         'attachment',
+        'photo',
     ];
 
     protected function casts(): array

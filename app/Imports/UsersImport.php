@@ -4,7 +4,6 @@ namespace App\Imports;
 
 use App\Models\Division;
 use App\Models\Education;
-use App\Models\JobTitle;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -27,15 +26,12 @@ class UsersImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
      */
     public function model(array $row)
     {
-        $division_id = Division::where('name', $row['division'])->first()?->id
-            ?? Division::create(['name' => $row['division']])?->id;
-        $job_title_id = JobTitle::where('name', $row['job_title'])->first()?->id
-            ?? JobTitle::create(['name' => $row['job_title']])?->id;
-        $education_id = Education::where('name', $row['education'])->first()?->id
-            ?? Education::create(['name' => $row['education']])?->id;
+        $major_id = Division::where('name', $row['major'])->first()?->id
+            ?? Division::create(['name' => $row['major']])?->id;
+        $school_id = Education::where('name', $row['school'])->first()?->id
+            ?? Education::create(['name' => $row['school']])?->id;
         $user = (new User)->forceFill([
             'id' => isset($row['id']) ? $row['id'] : null,
-            'nip' => $row['nip'],
             'name' => $row['name'],
             'email' => $row['email'],
             'phone' => $row['phone'],
@@ -44,9 +40,8 @@ class UsersImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
             'birth_place' => $row['birth_place'],
             'address' => $row['address'],
             'city' => $row['city'],
-            'education_id' => $education_id,
-            'division_id' => $division_id,
-            'job_title_id' => $job_title_id,
+            'school_id' => $school_id,
+            'major_id' => $major_id,
             'password' => Hash::make($row['password']),
             'raw_password' => $row['password'],
             'created_at' => $row['created_at'],
@@ -61,13 +56,9 @@ class UsersImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
     public function rules(): array
     {
         return [
-            'nip' => ['required', 'string', Rule::unique('users', 'nip')],
             'name' => ['required', 'string'],
             'email' => ['required', 'string', Rule::unique('users', 'email')],
             'gender' => ['required', 'string'],
-            // 'education' => ['nullable', 'exists:educations,name'],
-            // 'division' => ['nullable', 'exists:divisions,name'],
-            // 'job_title' => ['nullable', 'exists:job_titles,name'],
             'password' => ['required', 'string'],
         ];
     }

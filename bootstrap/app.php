@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'user' => \App\Http\Middleware\UserMiddleware::class,
         ]);
+        
+        // Trust all proxies for development tunnel
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

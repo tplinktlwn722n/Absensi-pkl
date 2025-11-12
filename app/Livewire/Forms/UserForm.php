@@ -23,6 +23,8 @@ class UserForm extends Form
     public $group = 'user';
     public $birth_date = null;
     public $birth_place = '';
+    public $major_id = null;
+    public $school_id = null;
     public $division_id = null;
     public $education_id = null;
     public $job_title_id = null;
@@ -38,7 +40,12 @@ class UserForm extends Form
                 'max:255',
                 Rule::unique('users')->ignore($this->user)
             ],
-            'nip' => [$requiredOrNullable, 'string', 'max:255'],
+            'nip' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('users')->ignore($this->user)
+            ],
             'email' => [
                 'required',
                 'email',
@@ -53,6 +60,8 @@ class UserForm extends Form
             'group' => ['nullable', 'string', 'max:255', Rule::in(User::$groups)],
             'birth_date' => ['nullable', 'date'],
             'birth_place' => ['nullable', 'string', 'max:255'],
+            'major_id' => ['nullable', 'exists:divisions,id'],
+            'school_id' => ['nullable', 'exists:educations,id'],
             'division_id' => ['nullable', 'exists:divisions,id'],
             'education_id' => ['nullable', 'exists:educations,id'],
             'job_title_id' => ['nullable', 'exists:job_titles,id'],
@@ -78,6 +87,8 @@ class UserForm extends Form
             ? \Illuminate\Support\Carbon::parse($user->birth_date)->format('Y-m-d')
             : null;
         $this->birth_place = $user->birth_place;
+        $this->major_id = $user->major_id;
+        $this->school_id = $user->school_id;
         $this->division_id = $user->division_id;
         $this->education_id = $user->education_id;
         $this->job_title_id = $user->job_title_id;

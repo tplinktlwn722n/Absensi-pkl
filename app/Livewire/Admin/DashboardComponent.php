@@ -12,6 +12,31 @@ class DashboardComponent extends Component
 {
     use AttendanceDetailTrait;
 
+    public $selectedUserId = null;
+    public $showUserDetailModal = false;
+    public $userAttendances = [];
+
+    public function showUserDetail($userId)
+    {
+        $this->selectedUserId = $userId;
+        $this->showUserDetailModal = true;
+        
+        // Get all attendances for this user
+        $this->userAttendances = Attendance::where('user_id', $userId)
+            ->whereNotNull('photo')
+            ->orderBy('date', 'desc')
+            ->orderBy('time_in', 'desc')
+            ->take(30) // Last 30 attendances with photos
+            ->get();
+    }
+
+    public function closeUserDetailModal()
+    {
+        $this->showUserDetailModal = false;
+        $this->selectedUserId = null;
+        $this->userAttendances = [];
+    }
+
     public function render()
     {
         /** @var Collection<Attendance>  */
@@ -36,6 +61,8 @@ class DashboardComponent extends Component
         $sickCount = $attendances->where(fn ($attendance) => $attendance->status === 'sick')->count();
         $absentCount = $employeesCount - ($presentCount + $lateCount + $excusedCount + $sickCount);
 
+        $selectedUser = $this->selectedUserId ? User::find($this->selectedUserId) : null;
+
         return view('livewire.admin.dashboard', [
             'employees' => $employees,
             'employeesCount' => $employeesCount,
@@ -44,6 +71,7 @@ class DashboardComponent extends Component
             'excusedCount' => $excusedCount,
             'sickCount' => $sickCount,
             'absentCount' => $absentCount,
+            'selectedUser' => $selectedUser,
         ]);
     }
 }

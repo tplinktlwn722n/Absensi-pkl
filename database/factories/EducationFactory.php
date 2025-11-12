@@ -9,7 +9,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class EducationFactory extends Factory
 {
-    static $educations = ['SD', 'SMP', 'SMA', 'SMK', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3'];
+    static $educations = [
+        'SMKN 1 Ciamis', 
+        'SMKN 1 Kawali', 
+        'SMKN 1 Panjalu'
+    ];
 
     /**
      * Define the model's default state.

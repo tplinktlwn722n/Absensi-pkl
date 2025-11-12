@@ -10,61 +10,76 @@
       @csrf
 
       <div>
-        <x-label for="name" value="{{ __('Name') }}" />
+        <x-label for="name" value="Nama" />
         <x-input id="name" class="mt-1 block w-full" type="text" name="name" :value="old('name')" required autofocus
           autocomplete="name" />
       </div>
 
       <div class="mt-4">
-        <x-label for="nip" value="{{ __('NIP') }}" />
-        <x-input id="nip" class="mt-1 block w-full" type="text" name="nip" :value="old('nip')"
-          autocomplete="nip" />
-      </div>
-
-      <div class="mt-4">
-        <x-label for="email" value="{{ __('Email') }}" />
+        <x-label for="email" value="Email" />
         <x-input id="email" class="mt-1 block w-full" type="email" name="email" :value="old('email')" required
           autocomplete="username" />
       </div>
 
       <div class="mt-4">
-        <x-label for="phone" value="{{ __('Phone Number') }}" />
+        <x-label for="phone" value="Nomor Telepon" />
         <x-input id="phone" class="mt-1 block w-full" type="number" name="phone" :value="old('phone')" required
           autocomplete="username" />
       </div>
 
       <div class="mt-4">
-        <x-label for="gender" value="{{ __('Gender') }}" />
+        <x-label for="gender" value="Jenis Kelamin" />
         <x-select id="gender" class="mt-1 block w-full" name="gender" required>
-          <option disabled selected>{{ __('Select Gender') }}</option>
+          <option disabled selected>Pilih Jenis Kelamin</option>
           <option value="male">
-            {{ __('Male') }}
+            Laki-laki
           </option>
           <option value="female">
-            {{ __('Female') }}
+            Perempuan
           </option>
         </x-select>
       </div>
 
       <div class="mt-4">
-        <x-label for="address" value="{{ __('Address') }}" />
+        <x-label for="address" value="Alamat" />
         <x-textarea id="address" class="mt-1 block w-full" name="address" :value="old('address')" required />
       </div>
 
       <div class="mt-4">
-        <x-label for="city" value="{{ __('City') }}" />
+        <x-label for="city" value="Kota" />
         <x-input id="city" class="mt-1 block w-full" type="text" name="city" :value="old('city')" required
           autocomplete="city" />
       </div>
 
       <div class="mt-4">
-        <x-label for="password" value="{{ __('Password') }}" />
+        <x-label for="major_id" value="Jurusan" />
+        <x-select id="major_id" class="mt-1 block w-full" name="major_id" required>
+          <option disabled selected>Pilih Jurusan</option>
+          @foreach (App\Models\Division::all() as $major)
+            <option value="{{ $major->id }}">{{ $major->name }}</option>
+          @endforeach
+        </x-select>
+      </div>
+
+      <div class="mt-4">
+        <x-label for="school" value="Asal Sekolah" />
+        <x-input id="school" class="mt-1 block w-full" type="text" name="school" :value="old('school')" required
+          list="schools" placeholder="Ketik nama sekolah" />
+        <datalist id="schools">
+          @foreach (App\Models\Education::all() as $school)
+            <option value="{{ $school->name }}">
+          @endforeach
+        </datalist>
+      </div>
+
+      <div class="mt-4">
+        <x-label for="password" value="Kata Sandi" />
         <x-input id="password" class="mt-1 block w-full" type="password" name="password" required
           autocomplete="new-password" />
       </div>
 
       <div class="mt-4">
-        <x-label for="password_confirmation" value="{{ __('Confirm Password') }}" />
+        <x-label for="password_confirmation" value="Konfirmasi Kata Sandi" />
         <x-input id="password_confirmation" class="mt-1 block w-full" type="password" name="password_confirmation"
           required autocomplete="new-password" />
       </div>
@@ -99,11 +114,11 @@
       <div class="mt-4 flex items-center justify-end">
         <a class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
           href="{{ route('login') }}">
-          {{ __('Already registered?') }}
+          Sudah terdaftar?
         </a>
 
         <x-button class="ms-4">
-          {{ __('Register') }}
+          Daftar
         </x-button>
       </div>
     </form>

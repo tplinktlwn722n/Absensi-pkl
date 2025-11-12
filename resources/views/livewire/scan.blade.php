@@ -1,335 +1,316 @@
 <div class="w-full">
   @php
     use Illuminate\Support\Carbon;
+    $now = Carbon::now();
+    $currentHour = $now->hour;
+    $currentMinute = $now->minute;
+    $canCheckIn = ($currentHour == 6 || $currentHour == 7 || ($currentHour == 8 && $currentMinute == 0));
+    $canCheckOut = ($currentHour >= 16);
+    $canAttend = $canCheckIn || $canCheckOut;
   @endphp
   @pushOnce('styles')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+      .camera-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; }
+      #camera-preview { width: 100%; border-radius: 8px; }
+      .camera-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px dashed rgba(255, 255, 255, 0.8); border-radius: 50%; }
+      .fade-out { animation: fadeOut 0.5s ease-out forwards; }
+      @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+      @keyframes bounce { 0%, 100% { transform: translateY(0) translateX(-50%); } 50% { transform: translateY(-10px) translateX(-50%); } }
+      .animate-bounce { animation: bounce 1s infinite; }
+    </style>
   @endpushOnce
   @pushOnce('scripts')
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script>
-      let currentMap = document.getElementById('currentMap');
-      let map = document.getElementById('map');
-
-      setTimeout(() => {
-        toggleMap();
-        toggleCurrentMap();
-      }, 1000);
-
-      function toggleCurrentMap() {
-        const mapIsVisible = currentMap.style.display === "none";
-        currentMap.style.display = mapIsVisible ? "block" : "none";
-        document.querySelector('#toggleCurrentMap').innerHTML = mapIsVisible ?
-          `<x-heroicon-s-chevron-up class="mr-2 h-5 w-5" />` :
-          `<x-heroicon-s-chevron-down class="mr-2 h-5 w-5" />`;
-      }
-
-      function toggleMap() {
-        const mapIsVisible = map.style.display === "none";
-        map.style.display = mapIsVisible ? "block" : "none";
-      }
-    </script>
   @endpushOnce
 
-  @if (!$isAbsence)
-    <script src="{{ url('/assets/js/html5-qrcode.min.js') }}"></script>
-  @endif
+  <div class="flex flex-col gap-4">
+    <!-- Realtime Clock Box -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 text-center">
+      <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-200" id="realtime-clock">--:--</h2>
+    </div>
 
-  <div class="flex flex-col gap-4 md:flex-row">
-    @if (!$isAbsence)
-      <div class="flex flex-col gap-4">
-        <div>
-          <x-select id="shift" class="mt-1 block w-full" wire:model="shift_id" disabled="{{ !is_null($attendance) }}">
-            <option value="">{{ __('Select Shift') }}</option>
-            @foreach ($shifts as $shift)
-              <option value="{{ $shift->id }}" {{ $shift->id == $shift_id ? 'selected' : '' }}>
-                {{ $shift->name . ' | ' . $shift->start_time . ' - ' . $shift->end_time }}
-              </option>
-            @endforeach
-          </x-select>
-          @error('shift_id')
-            <x-input-error for="shift" class="mt-2" message={{ $message }} />
-          @enderror
-        </div>
-        <div class="flex justify-center outline outline-gray-100 dark:outline-slate-700" wire:ignore>
-          <div id="scanner" class="min-h-72 sm:min-h-96 w-72 rounded-sm outline-dashed outline-slate-500 sm:w-96">
-          </div>
-        </div>
-      </div>
-    @endif
-    <div class="w-full">
-      <h4 id="scanner-error" class="mb-3 text-lg font-semibold text-red-500 dark:text-red-400 sm:text-xl" wire:ignore>
-      </h4>
-      <h4 id="scanner-result" class="mb-3 hidden text-lg font-semibold text-green-500 dark:text-green-400 sm:text-xl">
-        {{ $successMsg }}
-      </h4>
-      <h4 id="latlng" class="mb-3 text-lg font-semibold text-gray-600 dark:text-gray-100 sm:text-xl">
-        {{ __('Date') . ': ' . now()->format('d/m/Y') }}<br>
-
+    <!-- Main Container -->
+    <div class="w-full bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h4 id="message-error" class="mb-3 text-lg font-semibold text-red-500 dark:text-red-400 sm:text-xl"></h4>
+      <h4 id="message-success" class="mb-3 hidden text-lg font-semibold text-green-500 dark:text-green-400 sm:text-xl">{{ __('Attendance Successful') }}</h4>
+      
+      <div class="mb-4">
+        <p class="text-lg font-semibold text-gray-600 dark:text-gray-100">
+          {{ __('Date') . ': ' . now()->format('d/m/Y') }}
+        </p>
         @if (!is_null($currentLiveCoords))
-          <div class="flex justify-between">
-            <a href="{{ \App\Helpers::getGoogleMapsUrl($currentLiveCoords[0], $currentLiveCoords[1]) }}" target="_blank"
-              class="underline hover:text-blue-400">
+          <div class="flex justify-between items-center mt-2">
+            <a href="{{ \App\Helpers::getGoogleMapsUrl($currentLiveCoords[0], $currentLiveCoords[1]) }}" target="_blank" class="text-blue-500 hover:text-blue-600 underline text-sm">
               {{ __('Your location') . ': ' . $currentLiveCoords[0] . ', ' . $currentLiveCoords[1] }}
             </a>
-            <button class="text-nowrap h-6" onclick="toggleCurrentMap()" id="toggleCurrentMap">
-              <x-heroicon-s-chevron-down class="mr-2 h-5 w-5" />
+            <button class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onclick="toggleCurrentMap()" id="toggleCurrentMap">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-200" id="toggleMapIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
           </div>
         @else
-          {{ __('Your location') . ': -, -' }}
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">{{ __('Your location') . ': -, -' }}</p>
         @endif
-        <div class="my-6 h-72 w-full md:h-96" id="currentMap" wire:ignore></div>
-      </h4>
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        <div
-          class="{{ $attendance?->status == 'late' ? 'bg-red-200 dark:bg-red-900' : 'bg-blue-200 dark:bg-blue-900' }} flex items-center justify-between rounded-md px-4 py-2 text-gray-800 dark:text-white dark:shadow-gray-700">
-          <div>
-            <h4 class="text-lg font-semibold md:text-xl">Absen Masuk</h4>
-            <div class="flex flex-col sm:flex-row">
-              <span>
-                @if ($isAbsence)
-                  {{ __($attendance?->status) ?? '-' }}
-                @else
-                  {{ $attendance?->time_in ? Carbon::parse($attendance?->time_in)->format('H:i:s') : 'Belum Absen' }}
-                @endif
-              </span>
-              @if ($attendance?->status == 'late')
-                <span class="mx-1 hidden sm:inline-block">|</span>
-              @endif
-              <span>{{ $attendance?->status == 'late' ? 'Terlambat: Ya' : '' }}</span>
-            </div>
-          </div>
-          <x-heroicon-o-arrows-pointing-in class="h-5 w-5" />
-        </div>
-        <div
-          class="flex items-center justify-between rounded-md bg-orange-200 px-4 py-2 text-gray-800 dark:bg-orange-900 dark:text-white dark:shadow-gray-700">
-          <div>
-            <h4 class="text-lg font-semibold md:text-xl">Absen Keluar</h4>
-            @if ($isAbsence)
-              {{ __($attendance?->status) ?? '-' }}
-            @else
-              {{ $attendance?->time_out ? Carbon::parse($attendance?->time_out)->format('H:i:s') : 'Belum Absen' }}
-            @endif
-          </div>
-          <x-heroicon-o-arrows-pointing-out class="h-5 w-5" />
-        </div>
-        <button
-          class="col-span-2 flex items-center justify-between rounded-md bg-yellow-200 px-4 py-2 text-gray-800 dark:bg-yellow-900 dark:text-white dark:shadow-gray-700 md:col-span-1 lg:col-span-2 xl:col-span-1"
-          {{ is_null($attendance?->lat_lng) ? 'disabled' : 'onclick=toggleMap()' }} id="toggleMap">
-          <div>
-            <h4 class="text-lg font-semibold md:text-xl">Koordinat Absen</h4>
-            @if (is_null($attendance?->lat_lng))
-              Belum Absen
-            @else
-              <a href="{{ \App\Helpers::getGoogleMapsUrl($attendance?->latitude, $attendance?->longitude) }}"
-                target="_blank" class="underline hover:text-blue-400">
-                {{ $attendance?->latitude . ', ' . $attendance?->longitude }}
-              </a>
-            @endif
-          </div>
-          <x-heroicon-o-map-pin class="h-6 w-6" />
-        </button>
+        <div class="my-4 h-72 w-full md:h-96 rounded-lg overflow-hidden" id="currentMap" style="display: none;" wire:ignore></div>
       </div>
 
-      <div class="my-6 h-52 w-full md:h-64" id="map" wire:ignore></div>
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
+        <div class="{{ $attendance?->status == 'late' ? 'bg-red-200 dark:bg-red-900' : 'bg-blue-200 dark:bg-blue-900' }} flex items-center justify-between rounded-md px-4 py-2 text-gray-800 dark:text-white">
+          <div>
+            <h4 class="text-lg font-semibold md:text-xl">Status Absen</h4>
+            <div class="flex flex-col sm:flex-row">
+              <span>@if ($attendance) {{ __($attendance?->status) ?? '-' }} @else Belum Absen @endif</span>
+              @if ($attendance?->status == 'late')
+                <span class="mx-1 hidden sm:inline-block">|</span>
+                <span>Terlambat: Ya</span>
+              @endif
+            </div>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
 
       <hr class="my-4">
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3" wire:ignore>
+      <div class="mb-4 text-center">
+        @if (!$attendance)
+          <button wire:click="showAttendanceModal" @if(!$canAttend) disabled @endif
+                  class="px-8 py-4 text-lg font-semibold rounded-lg transition-colors duration-200 {{ $canAttend ? 'bg-blue-500 hover:bg-blue-600 text-white cursor-pointer' : 'bg-gray-400 text-gray-200 cursor-not-allowed' }}">
+            {{ $canCheckIn ? 'Absen Masuk' : ($canCheckOut ? 'Absen Pulang' : 'Diluar Jam Absen') }}
+          </button>
+          @if (!$canAttend)
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Absen masuk: 06:00 - 08:00 | Absen pulang: 16:00 ke atas</p>
+          @endif
+        @else
+          <p class="text-lg text-gray-600 dark:text-gray-300">Anda sudah absen hari ini</p>
+        @endif
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3">
         <a href="{{ route('apply-leave') }}">
-          <div
-            class="flex flex-col-reverse items-center justify-center gap-2 rounded-md bg-amber-500 px-4 py-2 text-center font-medium text-white shadow-md shadow-gray-400 transition duration-100 hover:bg-amber-600 dark:shadow-gray-700 md:flex-row md:gap-3">
+          <div class="flex flex-col-reverse items-center justify-center gap-2 rounded-md bg-amber-500 px-4 py-2 text-center font-medium text-white shadow-md shadow-gray-400 transition duration-100 hover:bg-amber-600 dark:shadow-gray-700 md:flex-row md:gap-3">
             Ajukan Izin
-            <x-heroicon-o-envelope-open class="h-6 w-6 text-white" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
           </div>
         </a>
         <a href="{{ route('attendance-history') }}">
-          <div
-            class="flex flex-col-reverse items-center justify-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-center font-medium text-white shadow-md shadow-gray-400 hover:bg-blue-600 dark:shadow-gray-700 md:flex-row md:gap-3">
+          <div class="flex flex-col-reverse items-center justify-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-center font-medium text-white shadow-md shadow-gray-400 hover:bg-blue-600 dark:shadow-gray-700 md:flex-row md:gap-3">
             Riwayat Absen
-            <x-heroicon-o-clock class="h-6 w-6 text-white" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
         </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Absen dengan Kamera -->
+  <div x-data="{ show: @entangle('showModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"></div>
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+      <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+        <div>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 text-center">Konfirmasi Absensi</h3>
+          <div class="camera-container mb-4">
+            <video id="camera-preview" autoplay playsinline></video>
+            <div class="camera-overlay"></div>
+          </div>
+          <canvas id="photo-canvas" style="display: none;"></canvas>
+          <p id="camera-error" class="text-red-500 text-sm text-center mb-4 hidden"></p>
+          <div class="flex gap-3 justify-center">
+            <button type="button" wire:click="capturePhoto" id="capture-button" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Ambil Foto & Absen</button>
+            <button type="button" wire:click="closeModal" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Batal</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 @script
-  <script>
-    const errorMsg = document.querySelector('#scanner-error');
-    getLocation();
+<script>
+let currentMap = document.getElementById('currentMap');
+let map = null;
+let cameraStream = null;
+let clockInterval = null;
 
-    async function getLocation() {
-      if (navigator.geolocation) {
-        const map = L.map('currentMap');
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 21,
-        }).addTo(map);
-        navigator.geolocation.watchPosition((position) => {
-          console.log(position);
-          $wire.$set('currentLiveCoords', [position.coords.latitude, position.coords.longitude]);
-          map.setView([
-            Number(position.coords.latitude),
-            Number(position.coords.longitude),
-          ], 13);
-          L.marker([position.coords.latitude, position.coords.longitude]).addTo(map);
-        }, (err) => {
-          console.error(`ERROR(${err.code}): ${err.message}`);
-          alert('{{ __('Please enable your location') }}');
-        });
-      } else {
-        document.querySelector('#scanner-error').innerHTML = "Gagal mendeteksi lokasi";
+function updateClock() {
+  try {
+    const clockElement = document.getElementById('realtime-clock');
+    if (clockElement) {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const newTime = `${hours}:${minutes}`;
+      
+      if (clockElement.textContent !== newTime) {
+        clockElement.textContent = newTime;
       }
     }
+  } catch (error) {
+    console.error('Clock update error:', error);
+  }
+}
 
-    if (!$wire.isAbsence) {
-      const scanner = new Html5Qrcode('scanner');
+updateClock();
+if (clockInterval) clearInterval(clockInterval);
+clockInterval = setInterval(updateClock, 1000);
 
-      const config = {
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-        fps: 15,
-        aspectRatio: 1,
-        qrbox: {
-          width: 280,
-          height: 280
-        },
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
-      };
-
-      async function startScanning() {
-        if (scanner.getState() === Html5QrcodeScannerState.PAUSED) {
-          return scanner.resume();
-        }
-        await scanner.start({
-            facingMode: "environment"
-          },
-          config,
-          onScanSuccess,
-        );
-      }
-
-      async function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Code matched = ${decodedText}`, decodedResult);
-
-        if (scanner.getState() === Html5QrcodeScannerState.SCANNING) {
-          scanner.pause(true);
-        }
-
-        if (!(await checkTime())) {
-          await startScanning();
-          return;
-        }
-
-        const result = await $wire.scan(decodedText);
-
-        if (result === true) {
-          return onAttendanceSuccess();
-        } else if (typeof result === 'string') {
-          errorMsg.innerHTML = result;
-        }
-
-        setTimeout(async () => {
-          await startScanning();
-        }, 500);
-      }
-
-      async function checkTime() {
-        const attendance = await $wire.getAttendance();
-
-        if (attendance) {
-          const timeIn = new Date(attendance.time_in).valueOf();
-          const diff = (Date.now() - timeIn) / (1000 * 3600);
-          const minAttendanceTime = 1;
-          console.log(`Difference = ${diff}`);
-          if (diff <= minAttendanceTime) {
-            const timeIn = new Date(attendance.time_in).toLocaleTimeString([], {
-              hour: 'numeric',
-              minute: 'numeric',
-              second: 'numeric',
-              hour12: false,
-            });
-            const confirmation = confirm(
-              `Anda baru saja absen pada ${timeIn}, apakah ingin melanjutkan untuk absen keluar?`
-            );
-            return confirmation;
-          }
-        }
-        return true;
-      }
-
-      function onAttendanceSuccess() {
-        scanner.stop();
-        errorMsg.innerHTML = '';
-        document.querySelector('#scanner-result').classList.remove('hidden');
-      }
-
-      const observer = new MutationObserver((mutationList, observer) => {
-        const classes = ['text-white', 'bg-blue-500', 'dark:bg-blue-400', 'rounded-md', 'px-3', 'py-1'];
-        for (const mutation of mutationList) {
-          if (mutation.type === 'childList') {
-            const startBtn = document.querySelector('#html5-qrcode-button-camera-start');
-            const stopBtn = document.querySelector('#html5-qrcode-button-camera-stop');
-            const fileBtn = document.querySelector('#html5-qrcode-button-file-selection');
-            const permissionBtn = document.querySelector('#html5-qrcode-button-camera-permission');
-
-            if (startBtn) {
-              startBtn.classList.add(...classes);
-              stopBtn.classList.add(...classes, 'bg-red-500');
-              fileBtn.classList.add(...classes);
-            }
-
-            if (permissionBtn)
-              permissionBtn.classList.add(...classes);
-          }
-        }
-      });
-
-      observer.observe(document.querySelector('#scanner'), {
-        childList: true,
-        subtree: true,
-      });
-
-      const shift = document.querySelector('#shift');
-      const msg = 'Pilih shift terlebih dahulu';
-      let isRendered = false;
+function toggleCurrentMap() {
+  const mapElement = document.getElementById('currentMap');
+  const iconElement = document.getElementById('toggleMapIcon');
+  
+  if (mapElement) {
+    const isHidden = mapElement.style.display === 'none';
+    mapElement.style.display = isHidden ? 'block' : 'none';
+    
+    if (iconElement) {
+      iconElement.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+    
+    if (isHidden && map) {
       setTimeout(() => {
-        if (!shift.value) {
-          errorMsg.innerHTML = msg;
-        } else {
-          startScanning();
-          isRendered = true;
-        }
-      }, 1000);
-      shift.addEventListener('change', () => {
-        if (!isRendered) {
-          startScanning();
-          isRendered = true;
-          errorMsg.innerHTML = '';
-        }
-        if (!shift.value) {
-          scanner.pause(true);
-          errorMsg.innerHTML = msg;
-        } else if (scanner.getState() === Html5QrcodeScannerState.PAUSED) {
-          scanner.resume();
-          errorMsg.innerHTML = '';
-        }
-      });
-
-      const map = L.map('map').setView([
-        Number({{ $attendance?->latitude }}),
-        Number({{ $attendance?->longitude }}),
-      ], 13);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 21,
-      }).addTo(map);
-      L.marker([
-        Number({{ $attendance?->latitude }}),
-        Number({{ $attendance?->longitude }}),
-      ]).addTo(map);
+        map.invalidateSize();
+      }, 100);
     }
-  </script>
+  }
+}
+
+async function getLocation() {
+  if (navigator.geolocation) {
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+      
+      if (!map) {
+        map = L.map('currentMap');
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 21 }).addTo(map);
+      }
+      
+      // Set initial position
+      $wire.$set('currentLiveCoords', [position.coords.latitude, position.coords.longitude]);
+      map.setView([position.coords.latitude, position.coords.longitude], 13);
+      L.marker([position.coords.latitude, position.coords.longitude]).addTo(map);
+      
+      // Watch position for updates
+      navigator.geolocation.watchPosition((position) => {
+        $wire.$set('currentLiveCoords', [position.coords.latitude, position.coords.longitude]);
+        map.setView([Number(position.coords.latitude), Number(position.coords.longitude)], 13);
+      }, (err) => {
+        console.error(`ERROR(${err.code}): ${err.message}`);
+      });
+    } catch (err) {
+      console.error(`ERROR(${err.code}): ${err.message}`);
+      showPermissionModal();
+    }
+  } else {
+    document.querySelector('#message-error').innerHTML = "Browser tidak mendukung geolokasi";
+  }
+}
+
+function showPermissionModal() {
+  const existingModal = document.getElementById('permission-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  const modal = document.createElement('div');
+  modal.id = 'permission-modal';
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4';
+  modal.innerHTML = `
+    <div class="bg-gray-900 border-2 border-yellow-500 rounded-lg p-6 max-w-md w-full text-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      
+      <h3 class="text-xl font-bold text-white mb-4">PERINGATAN</h3>
+      
+      <p class="text-white text-sm mb-6">
+        * Anda harus mengaktifkan akses <strong>Lokasi</strong> dan <strong>Kamera</strong> untuk dapat menggunakan sistem absensi.
+      </p>
+      
+      <p class="text-gray-400 text-xs mb-6">
+        Silakan klik icon gembok di address bar browser, lalu izinkan akses Location dan Camera. Setelah itu muat ulang halaman ini.
+      </p>
+      
+      <button onclick="location.reload()" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded transition-colors">
+        Muat Ulang Halaman
+      </button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function startCamera() {
+  try {
+    const video = document.getElementById('camera-preview');
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    video.srcObject = cameraStream;
+  } catch (error) {
+    console.error('Error accessing camera:', error);
+    document.getElementById('camera-error').textContent = 'Gagal mengakses kamera. Pastikan Anda mengizinkan akses kamera.';
+    document.getElementById('camera-error').classList.remove('hidden');
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+}
+
+Livewire.on('modalOpened', () => { setTimeout(() => { startCamera(); }, 300); });
+Livewire.on('modalClosed', () => { stopCamera(); });
+
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'capture-button') {
+    const video = document.getElementById('camera-preview');
+    const canvas = document.getElementById('photo-canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        $wire.photoData = reader.result;
+        $wire.submitAttendance();
+      };
+      reader.readAsDataURL(blob);
+    }, 'image/jpeg', 0.8);
+  }
+});
+
+getLocation();
+
+// Initialize on page load - show modal if permission not granted
+async function initializePage() {
+  try {
+    console.log('Checking location permission...');
+    await getLocation();
+    console.log('Location permission granted');
+  } catch (error) {
+    console.log('Location permission needed, showing instruction modal');
+    showPermissionModal();
+  }
+}
+
+initializePage();
+</script>
 @endscript

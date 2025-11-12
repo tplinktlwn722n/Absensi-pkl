@@ -3,7 +3,7 @@
     @if ($mode != 'import')
       <div>
         <h3 class="mb-4 text-lg font-semibold leading-tight text-gray-800 dark:text-gray-200">
-          Ekspor Data Karyawan/Admin
+          Ekspor Data Siswa/Admin
         </h3>
         <form wire:submit.prevent="export">
           <div>
@@ -45,7 +45,7 @@
     @if ($mode != 'export')
       <div>
         <h3 class="mb-4 text-lg font-semibold leading-tight text-gray-800 dark:text-gray-200">
-          Impor Data Karyawan/Admin
+          Impor Data Siswa/Admin
         </h3>
         <form x-data="{ file: null }" method="post" wire:submit.prevent="import" enctype="multipart/form-data">
           @csrf

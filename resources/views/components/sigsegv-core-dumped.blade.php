@@ -1,5 +1,5 @@
 <footer class="bg-white dark:bg-gray-800 py-4 text-right">
   <div class="container mx-auto">
-    <p class="text-gray-600 dark:text-gray-400">Created by <a href="https://github.com/ikhsan3adi" class="underline font-semibold hover:text-gray-900 dark:hover:text-gray-200" target="_blank">@ikhsan3adi</a></p>
+    <p class="text-gray-600 dark:text-gray-400">Dibuat oleh <a href="https://www.instagram.com/_azmiii22?igsh=ZGFqdndwcjU0Z3Zi" class="underline font-semibold hover:text-gray-900 dark:hover:text-gray-200" target="_blank">@Azmi</a>, <a href="https://www.instagram.com/riswan_fadillh?igsh=YWJqanh6bzVhN2Q5" class="underline font-semibold hover:text-gray-900 dark:hover:text-gray-200" target="_blank">@Riswan</a>, <a href="https://www.instagram.com/alipsukasuka_1?igsh=YXRieTJubDRhN2p2" class="underline font-semibold hover:text-gray-900 dark:hover:text-gray-200" target="_blank">@Alif</a>, <a href="https://www.instagram.com/abey_ysvjsh?igsh=MWg5ZnEyM2l1NWI5dQ==" class="underline font-semibold hover:text-gray-900 dark:hover:text-gray-200" target="_blank">@Albar</a>  dan <a href="https://www.instagram.com/bernardamerr?igsh=MW5lczFjazVxemF2YQ==" class="underline font-semibold hover:text-gray-900 dark:hover:text-gray-200" target="_blank">@Damar</a> </p>
   </div>
 </footer>
